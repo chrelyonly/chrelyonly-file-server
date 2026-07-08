@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"flag"
 	"fmt"
 	"html/template"
 	"io"
@@ -11,9 +12,6 @@ import (
 	"path/filepath"
 	"strings"
 )
-
-// 全局配置：管理的根目录
-var rootDir string
 
 type FileItem struct {
 	Name  string
@@ -28,16 +26,15 @@ type PageData struct {
 	Files       []FileItem
 }
 
+var (
+	rootDir = flag.String("root", "./shared_files", "默认目录")
+	port    = flag.String("port", "8080", "默认端口")
+)
+
 func main() {
-	port := "8080"
-	rootDir = "./shared_files"
+	flag.Parse()
 
-	if len(os.Args) > 2 {
-		port = os.Args[1]
-		rootDir = filepath.Clean(os.Args[2])
-	}
-
-	_ = os.MkdirAll(rootDir, os.ModePerm)
+	_ = os.MkdirAll(*rootDir, os.ModePerm)
 
 	// 核心路由绑定
 	http.HandleFunc("/", handleIndex)
@@ -47,8 +44,8 @@ func main() {
 	http.HandleFunc("/batch-delete", handleBatchDelete)
 	http.HandleFunc("/batch-download", handleBatchDownload)
 
-	fmt.Printf("🚀 现代化文件管理服务已启动！\n监听端口: :%s\n正在管理: %s\n请用浏览器直接访问该 IP 端口管理。\n", port, rootDir)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	fmt.Printf("🚀 现代化文件管理服务已启动！\n监听端口: :%s\n正在管理: %s\n请用浏览器直接访问该 IP 端口管理。\n", *port, *rootDir)
+	log.Fatal(http.ListenAndServe(":"+*port, nil))
 }
 
 // 路径安全校验
@@ -59,9 +56,9 @@ func getSafePath(reqPath string) string {
 	reqPath = strings.TrimPrefix(reqPath, "/")
 
 	// 2. 获取根目录的绝对路径
-	absRootDir, err := filepath.Abs(rootDir)
+	absRootDir, err := filepath.Abs(*rootDir)
 	if err != nil {
-		return rootDir
+		return *rootDir
 	}
 
 	// 3. 拼接目标路径并计算绝对路径
@@ -84,7 +81,7 @@ func getSafePath(reqPath string) string {
 func handleIndex(w http.ResponseWriter, r *http.Request) {
 	reqPath := r.URL.Query().Get("path")
 	targetFullPath := getSafePath(reqPath)
-	relPath, _ := filepath.Rel(rootDir, targetFullPath)
+	relPath, _ := filepath.Rel(*rootDir, targetFullPath)
 	if relPath == "." {
 		relPath = ""
 	}
@@ -345,7 +342,7 @@ func isPathSafe(reqPath string) bool {
 	reqPath = strings.ReplaceAll(reqPath, "\\", "/")
 	reqPath = strings.TrimPrefix(reqPath, "/")
 
-	absRootDir, _ := filepath.Abs(rootDir)
+	absRootDir, _ := filepath.Abs(*rootDir)
 	targetPath := filepath.Join(absRootDir, reqPath)
 	absTargetPath, _ := filepath.Abs(targetPath)
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"embed"
 	"flag"
 	"fmt"
 	"html/template"
@@ -12,6 +13,9 @@ import (
 	"path/filepath"
 	"strings"
 )
+
+//go:embed index.html
+var htmlTemplate embed.FS
 
 type FileItem struct {
 	Name  string
@@ -124,12 +128,29 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 关键修改：直接读取同级目录下的 index.html 文件
-	tmpl, err := template.ParseFiles("index.html")
+	tmpl, err := template.ParseFS(
+		htmlTemplate,
+		"index.html",
+	)
+
 	if err != nil {
-		http.Error(w, "未找到 index.html 模板文件，请确保它与可执行文件在同一目录下。", http.StatusInternalServerError)
+		http.Error(
+			w,
+			"模板加载失败:"+err.Error(),
+			http.StatusInternalServerError,
+		)
 		return
 	}
-	_ = tmpl.Execute(w, data)
+
+	err = tmpl.Execute(w, data)
+
+	if err != nil {
+		http.Error(
+			w,
+			err.Error(),
+			http.StatusInternalServerError,
+		)
+	}
 }
 
 // 2. 多选文件上传
@@ -339,12 +360,17 @@ func handleDownload(w http.ResponseWriter, r *http.Request) {
 
 // 新增一个判断，用于在关键操作（下载、删除）中直接拦截并报警
 func isPathSafe(reqPath string) bool {
-	reqPath = strings.ReplaceAll(reqPath, "\\", "/")
-	reqPath = strings.TrimPrefix(reqPath, "/")
 
-	absRootDir, _ := filepath.Abs(*rootDir)
-	targetPath := filepath.Join(absRootDir, reqPath)
-	absTargetPath, _ := filepath.Abs(targetPath)
+	reqPath = filepath.Clean(reqPath)
 
-	return strings.HasPrefix(absTargetPath, absRootDir)
+	root, _ := filepath.Abs(*rootDir)
+	target, _ := filepath.Abs(filepath.Join(root, reqPath))
+
+	rel, err := filepath.Rel(root, target)
+
+	if err != nil {
+		return false
+	}
+
+	return !strings.HasPrefix(rel, "..")
 }

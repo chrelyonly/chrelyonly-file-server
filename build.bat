@@ -13,4 +13,4 @@ D:\dev\sdk\go\gopath\pkg\mod\golang.org\toolchain@v0.0.1-go1.26.4.windows-amd64\
 
 
 
-go build -trimpath  -ldflags="-s -w" -o build/strawberry_minio main.go
+go build -trimpath  -ldflags="-s -w -z max-page-size=16384" -o build/strawberry_minio main.go

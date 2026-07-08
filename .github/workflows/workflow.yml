@@ -109,8 +109,8 @@ jobs:
           if [ "$GOOS" = "android" ]; then
             if [ "$GOARCH" = "amd64" ]; then
               export CGO_ENABLED=1
-              export CC=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang
-              export CXX=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang++
+              export CC=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android26-clang
+              export CXX=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android26-clang++
             fi
           else
             export CGO_ENABLED=0
